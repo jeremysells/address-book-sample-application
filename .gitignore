@@ -1,0 +1,19 @@
+# Ignore editor files
+/.idea
+/nbproject
+
+# Ignore PHP Dependencies
+/vendor
+
+# Ignore Javascript/CSS dependencies
+/public_html/node_modules
+
+# Ignore Dynamic folder
+/dynamic
+
+# Ignore QA Files
+/coverage.xml
+/build/logs
+/build/pdepend
+/build/phpmetrics
+/coverage.xml
