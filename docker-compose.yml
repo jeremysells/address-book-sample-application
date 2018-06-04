@@ -1,0 +1,67 @@
+version: "2"
+
+services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile.dev
+            args:
+                FROM_IMAGE: ${APPLICATION_DOCKER_FROM_IMAGE}
+                PHP_VERSION: ${APPLICATION_PHP_VERSION}
+                APPLICATION_CODE: ${APPLICATION_CODE}
+                APPLICATION_NAME: ${APPLICATION_NAME}
+                VERSION: 0.0.0
+                VERSION_HASH: 000000
+                BUILD_DATE: "2000-01-01T01:00:00+00:00"
+        environment:
+            - HTTP_NODE_MODULES=http://address-book.local/node_modules
+            - LOG_LEVEL=DEBUG
+            - DATABASE_PORT=3306
+            - DATABASE_SCHEMA=address_book
+            - DATABASE_HOSTNAME=sql
+            - DATABASE_USERNAME=root
+            - DATABASE_PASSWORD=password
+            - DATABASE_CHARSET=utf8
+            - DATABASE_CREATE_SCHEMA=true
+            - DATABASE_WAIT=10
+            - REDIS_HOSTNAME=redis
+            - REDIS_PORT=6379
+            - REDIS_TIMEOUT=2.0
+        volumes:
+            - ./:/home/address-book/application
+        depends_on:
+           - "sql"
+           - "redis"
+        networks:
+            - web
+            - cache
+            - sql
+    web:
+        image: nginx:1.13
+        ports:
+           - 80:80
+        volumes:
+           - ./public_html:/home/address-book/application/public_html:ro
+           - ./build/development/nginx/conf.d:/etc/nginx/conf.d/:ro
+        depends_on:
+           - "app"
+        networks:
+           - web
+    redis:
+        image: redis:4
+        networks:
+           - cache
+    sql:
+        image: mariadb:10.3
+        ports:
+           - 3210:3306
+        environment:
+          - MYSQL_ROOT_PASSWORD=password
+        volumes:
+          - ${DATA_DIR}/sql:/var/lib/mysql
+        networks:
+           - sql
+networks:
+    web:
+    sql:
+    cache:

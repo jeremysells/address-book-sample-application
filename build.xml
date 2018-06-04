@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="QA Checks" default="check">
+
+    <property name="dir.build"              value="${basedir}/build"/>
+    <property name="dir.build.api"          value="${dir.build}/api"/>
+    <property name="dir.build.logs"         value="${dir.build}/logs"/>
+    <property name="dir.build.pdepend"      value="${dir.build}/pdepend"/>
+    <property name="dir.build.phpmetrics"   value="${dir.build}/phpmetrics"/>
+    <property name="dir.src"                value="${basedir}/src"/>
+    <property name="dir.tests"              value="${basedir}/tests"/>
+    <property name="dir.vendor"             value="${basedir}/vendor"/>
+    <property name="dir.vendor.bin"         value="${basedir}/vendor/bin"/>
+
+    <property name="pdepend"                value="${dir.vendor.bin}/pdepend"/>
+    <property name="phpcpd"                 value="${dir.vendor.bin}/phpcpd"/>
+    <property name="phpcs"                  value="${dir.vendor.bin}/phpcs"/>
+    <property name="phpmetrics"             value="${dir.vendor.bin}/phpmetrics"/>
+    <property name="phploc"                 value="${dir.vendor.bin}/phploc"/>
+    <property name="phpmd"                  value="${dir.vendor.bin}/phpmd"/>
+    <property name="phpunit"                value="${dir.vendor.bin}/phpunit"/>
+    <property name="securitychecker"        value="${dir.vendor.bin}/security-checker"/>
+    <property name="parallellint"           value="${dir.vendor.bin}/parallel-lint"/>
+    <property name="phpstan"                value="${dir.vendor.bin}/phpstan"/>
+    <property name="psalm"                  value="${dir.vendor.bin}/psalm"/>
+    <property name="phan"                   value="${dir.vendor.bin}/phan"/>
+
+    <property name="phpcs.xml"              value="${basedir}/phpcs.xml"/>
+    <property name="phpunit.xml"            value="${basedir}/phpunit.xml"/>
+    <property name="phpunit.coverage.xml"   value="${basedir}/coverage.xml"/>
+    <property name="phpmd.xml"              value="${basedir}/phpmd.xml"/>
+
+    <!--===ACTIONS==========================================================-->
+
+    <target name="check"
+            description="Performs a static code analysis and unit tests (This is for development)"
+            depends="prepare,static-code-analysis,phpunit"
+    />
+
+    <target name="build-full"
+            description="Performs a static code analysis, unit tests and builds reports"
+            depends="prepare,static-code-analysis,phpunit,generate-reports"
+    />
+
+    <!--===COMMON TASKS=====================================================-->
+
+    <!-- Deletes dirs -->
+    <target name="clean"
+            unless="clean.done"
+            description="Cleanup build artifacts">
+        <delete dir="${dir.build.logs}"/>
+        <delete dir="${dir.build.pdepend}"/>
+        <delete dir="${dir.build.phpmetrics}"/>
+        <property name="clean.done" value="true"/>
+    </target>
+
+    <!-- Makes dirs -->
+    <target name="prepare"
+            unless="prepare.done"
+            depends="clean"
+            description="Prepare for build">
+        <mkdir dir="${dir.build.logs}"/>
+        <mkdir dir="${dir.build.pdepend}"/>
+        <mkdir dir="${dir.build.phpmetrics}"/>
+        <property name="prepare.done" value="true"/>
+    </target>
+
+    <!--Static Code Analysis-->
+    <target name="static-code-analysis"
+            description="Preforms a static code analysis (No unit tests)"
+            depends="securitychecker,lint,phpcs,phpmd,phpstan,phpcpd,psalm,phan"
+    />
+
+    <!--Static Code Analysis-->
+    <target name="generate-reports"
+            description="Builds reports"
+            depends="phploc,pdepend,phpmetrics"
+    />
+
+    <!--===TOOLS - STATIC CODE ANALYSIS=====================================-->
+    <!--
+        SensioLabs Security Checker
+            - https://github.com/sensiolabs/security-checker
+            - https://security.sensiolabs.org/database
+            - Re: end-point (http) is a fix. See https://github.com/sensiolabs/security-checker/issues/75#issuecomment-299712799
+    -->
+    <target name="securitychecker"
+            unless="securitychecker.done"
+            description="Perform security check of the composer.json">
+        <exec executable="${securitychecker}" taskname="securitychecker">
+            <arg value="--no-interaction" />
+            <arg value="security:check" />
+            <arg value="--end-point=http://security.sensiolabs.org/check_lock" />
+        </exec>
+        <property name="securitychecker.done" value="true"/>
+    </target>
+
+    <!--
+        PHP Parallel Lint
+            - https://github.com/JakubOnderka/PHP-Parallel-Lint
+   -->
+    <target name="lint"
+            unless="lint.done"
+            description="Perform syntax check of sourcecode files">
+        <exec executable="${parallellint}" taskname="phplint">
+            <arg value="--exclude" />
+            <arg path="${dir.vendor}" />
+            <arg value="${basedir}" />
+        </exec>
+        <property name="lint.done" value="true"/>
+    </target>
+
+    <!--
+        PHPCS (PHP CodeSniffer)
+            - https://github.com/squizlabs/PHP_CodeSniffer
+   -->
+    <target name="phpcs"
+            unless="phpcs.done"
+            description="Find coding standard violations using PHP_CodeSniffer and print human readable output.">
+        <exec executable="${phpcs}" taskname="phpcs">
+            <arg value="--standard=${phpcs.xml}" />
+            <arg path="${dir.src}" />
+            <arg path="${dir.tests}" />
+        </exec>
+
+        <property name="phpcs.done" value="true"/>
+    </target>
+
+    <!--
+        PHPMD (PHP Mess Detector)
+            - https://phpmd.org/
+    -->
+    <target name="phpmd"
+            unless="phpmd.done"
+            description="Perform project mess detection using PHPMD and print human readable output.">
+        <exec executable="${phpmd}" taskname="phpmd">
+            <arg path="${dir.src}" />
+            <arg value="text" />
+            <arg path="${phpmd.xml}" />
+        </exec>
+
+        <property name="phpmd.done" value="true"/>
+    </target>
+
+
+    <!--
+        PHPStan (PHP Static Analysis Tool)
+            - https://github.com/phpstan/phpstan
+    -->
+    <target name="phpstan"
+            unless="phpstan.done"
+            description="">
+        <exec executable="${phpstan}" taskname="phpstan">
+            <arg value="analyse" />
+            <arg path="${dir.src}" />
+            <arg value="--level=7" />
+        </exec>
+
+        <property name="phpstan.done" value="true"/>
+    </target>
+
+
+    <!--
+        PHPCPD (PHP Copy/Paste Detector)
+            - https://github.com/sebastianbergmann/phpcpd
+    -->
+    <target name="phpcpd"
+            unless="phpcpd.done"
+            description="Find duplicate code using PHPCPD and print human readable output.">
+        <exec executable="${phpcpd}" taskname="phpcpd">
+            <arg path="${dir.src}" />
+            <arg value="--no-interaction" />
+        </exec>
+
+        <property name="phpcpd.done" value="true"/>
+    </target>
+
+    <!--
+        Psalm (A static analysis tool for finding errors in PHP applications)
+            - https://github.com/vimeo/psalm
+            - https://getpsalm.org/
+    -->
+    <target name="psalm"
+            unless="psalm.done"
+            description="">
+        <exec executable="${psalm}" taskname="psalm">
+            <arg path="${dir.src}" />
+            <arg value="--no-interaction" />
+        </exec>
+
+        <property name="psalm.done" value="true"/>
+    </target>
+
+
+    <!--
+        Phan (Phan is a static analyzer for PHP)
+            - https://github.com/phan/phan
+    -->
+    <target name="phan"
+            unless="phan.done"
+            description="">
+        <exec executable="${phan}" taskname="phan">
+            <env key="PHAN_DISABLE_XDEBUG_WARN" value="1"/>
+        </exec>
+
+        <property name="phan.done" value="true"/>
+    </target>
+
+    <!--===TOOLS - UNIT TESTS===============================================-->
+
+    <!--
+        PHPUnit (The PHP Testing Framework)
+            - https://phpunit.de/
+    -->
+    <target name="phpunit"
+            unless="phpunit.done"
+            depends="prepare"
+            description="Run unit tests with PHPUnit">
+
+        <!--Validate the phpunit.xml-->
+        <exec executable="xmllint" taskname="phpunit">
+            <arg value="--noout"/>
+            <arg value="--schema"/>
+            <arg value="vendor/phpunit/phpunit/phpunit.xsd"/>
+            <arg path="${phpunit.xml}"/>
+        </exec>
+
+        <!--Run the unit tests-->
+        <exec executable="${phpunit}" taskname="phpunit">
+            <arg value="--configuration"/>
+            <arg path="${phpunit.xml}"/>
+            <arg value="--coverage-clover"/>
+            <arg path="${phpunit.coverage.xml}"/>
+        </exec>
+
+        <property name="phpunit.done" value="true"/>
+    </target>
+
+    <!--===TOOLS - REPORTING================================================-->
+
+    <!--
+        PHPLOC (PHP Lines of code)
+            - https://github.com/sebastianbergmann/phploc
+    -->
+    <target name="phploc"
+            unless="phploc.done"
+            description="Measure project size using PHPLOC and print human readable output.">
+        <exec executable="${phploc}" taskname="phploc">
+            <arg value="--count-tests" />
+            <arg path="${dir.src}" />
+            <arg path="${dir.tests}" />
+        </exec>
+
+        <property name="phploc.done" value="true"/>
+    </target>
+
+    <!--
+        PDepend (PHP Depend)
+            - https://pdepend.org/
+    -->
+    <target name="pdepend"
+            unless="pdepend.done"
+            depends="prepare"
+            description="Calculate software metrics using PHP_Depend and log result in XML format.">
+        <exec executable="${pdepend}" taskname="pdepend">
+            <arg value="--jdepend-xml=${dir.build.logs}/jdepend.xml" />
+            <arg value="--jdepend-chart=${dir.build.pdepend}/dependencies.svg" />
+            <arg value="--overview-pyramid=${dir.build.pdepend}/overview-pyramid.svg" />
+            <arg path="${dir.src}" />
+        </exec>
+
+        <property name="pdepend.done" value="true"/>
+    </target>
+
+    <!--
+        PhpMetrics (PhpMetrics Static analyzer for PHP)
+            - https://github.com/phpmetrics/PhpMetrics
+    -->
+    <target name="phpmetrics"
+            unless="phpmetrics.done"
+            description="Measure project size using PHPLOC and print human readable output.">
+        <exec executable="${phpmetrics}" taskname="phpmetrics">
+            <arg value="--report-html=${dir.build.phpmetrics}" />
+            <arg path="${dir.src}" />
+        </exec>
+
+        <property name="phpmetrics.done" value="true"/>
+    </target>
+
+</project>

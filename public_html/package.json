@@ -1,0 +1,11 @@
+{
+  "name": "jeremysells-addressbook",
+  "description": "Address Book - by Jeremy Sells",
+  "private": true,
+  "dependencies": {
+    "admin-lte": "^2.4.3",
+    "html5shiv": "^3.7.3",
+    "respond": "^0.9.0"
+  },
+  "devDependencies": {}
+}

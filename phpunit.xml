@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="vendor/autoload.php" backupGlobals="true">
+    <!-- Run every file in the 'tests' folder that has the 'Test.php' suffix -->
+    <testsuites>
+        <testsuite name="Test Files">
+            <directory suffix="Test.php" >./tests</directory>
+        </testsuite>
+    </testsuites>
+
+    <!-- Code coverage is against the 'src' directory -->
+    <filter>
+        <whitelist processUncoveredFilesFromWhitelist="true">
+            <directory suffix=".php">./src</directory>
+        </whitelist>
+    </filter>
+</phpunit>

@@ -1,0 +1,102 @@
+ARG FROM_IMAGE
+
+#===BASE IMAGE================================================================
+FROM ${FROM_IMAGE}
+
+#---SETTINGS AND CONFIGURATION---
+# REQUIRED ARGS
+ARG PHP_VERSION
+ARG APPLICATION_CODE
+ARG APPLICATION_NAME
+ARG VERSION
+ARG VERSION_HASH
+ARG BUILD_DATE
+
+# ENVIRONMENT (from ARGS and additional)
+ENV TERM xterm
+ENV ENVIRONMENT=development
+ENV DATABASE_WAIT=1
+ENV PHP_VERSION=${PHP_VERSION}
+ENV APPLICATION_CODE=${APPLICATION_CODE}
+ENV APPLICATION_NAME=${APPLICATION_NAME}
+ENV VERSION=${VERSION}
+ENV VERSION_HASH=${VERSION_HASH}
+ENV BUILD_DATE=${BUILD_DATE}
+ENV APPLICATION_USER=${APPLICATION_CODE}
+ENV PATH_APPLICATION_HOME=/home/${APPLICATION_USER}
+ENV PATH_APPLICATION_CODE=${PATH_APPLICATION_HOME}/application
+ENV PATH_APPLICATION_CODE_VIEWS=${PATH_APPLICATION_CODE}/views
+ENV PATH_APPLICATION_CODE_DYNAMIC=${PATH_APPLICATION_CODE}/dynamic
+ENV PATH_APPLICATION_CODE_DYNAMIC_USER=${PATH_APPLICATION_CODE_DYNAMIC}/user
+ENV PATH_APPLICATION_CODE_DYNAMIC_CACHE=${PATH_APPLICATION_CODE_DYNAMIC}/cache
+
+# Label
+LABEL org.label-schema.schema-version="1.0"
+LABEL org.label-schema.name=$APPLICATION_NAME
+LABEL org.label-schema.version=$VERSION
+LABEL org.label-schema.vcs-ref=$VERSION_HASH
+LABEL org.label-schema.build-date=$BUILD_DATE
+
+#---INSTALL REQUIREMENTS---
+RUN     DEBIAN_FRONTEND=noninteractive apt-get update \
+    &&  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            php-fpm \
+            php-redis \
+            php-cli \
+            php-readline \
+            php-common \
+            php-json \
+            php-mysql \
+            php-curl \
+            php-dom \
+            php-mbstring \
+            php-ast \
+            php-xdebug \
+            curl \
+            wget \
+            nano \
+            git \
+            ssh-client \
+            unzip \
+            ca-certificates \
+            gnupg \
+            mysql-client \
+            ant \
+            libxml2-utils
+
+#---CONFIGURE BOX---
+COPY build/development/address-book/php /etc/php/${PHP_VERSION}
+COPY build/development/address-book/sbin /sbin/
+
+#---INSTALL COMPOSER---
+# https://getcomposer.org/doc/faqs/how-to-install-composer-programmatically.md
+RUN /sbin/install-composer.sh
+
+#---INSTALL YARN---
+# https://yarnpkg.com/en/docs/install#debian-stable
+RUN     curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
+    &&  echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
+    &&  DEBIAN_FRONTEND=noninteractive apt-get update \
+    &&  DEBIAN_FRONTEND=noninteractive apt-get install -y yarn
+
+#---ADD USER AND FOLDER---
+RUN     adduser ${APPLICATION_USER} --gecos "" --disabled-login --disabled-password --home ${PATH_APPLICATION_HOME} \
+    &&  mkdir -p ${PATH_APPLICATION_CODE}
+
+#---PID FILE---
+# Make the pid file folder (This is not done automatically and it errors)
+RUN     mkdir -p /run/php \
+    &&  touch /run/php/php${PHP_VERSION}-fpm.pid \
+    &&  chmod 700 /run/php -R \
+    &&  chown ${APPLICATION_USER}:${APPLICATION_USER} /run/php -R
+
+#---ENABLE DEVELOPMENT CONFIG---
+RUN phpenmod development
+
+#---RUN---
+# Switch user
+USER ${APPLICATION_USER}
+WORKDIR ${PATH_APPLICATION_CODE}
+
+# Lets do this
+CMD ["/sbin/entrypoint.sh"]
