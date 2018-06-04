@@ -30,8 +30,12 @@ Sample application with a focus on backend development.
 * More unit tests
 
 ## Run
-For portability this application uses Docker as a development environment
+For portability this application uses Docker as a development environment.
+Any errors go to standard out (`docker-compose logs -f app`)
 1) Add hosts file entry for `address-book.local`
     e.g. On Ubuntu `nano /etc/hosts` and add `127.0.0.1    address-book.local`
 2) `docker-compose up -d --build`
 3) `docker-compose exec app bin/dev-install.sh`
+4) Wait about 10 seconds
+5) http://address-book.local/
+6) http://address-book.local/populate-test-data
