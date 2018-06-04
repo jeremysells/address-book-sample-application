@@ -23,7 +23,7 @@ services:
             - DATABASE_PASSWORD=password
             - DATABASE_CHARSET=utf8
             - DATABASE_CREATE_SCHEMA=true
-            - DATABASE_WAIT=10
+            - DATABASE_WAIT=2
             - REDIS_HOSTNAME=redis
             - REDIS_PORT=6379
             - REDIS_TIMEOUT=2.0

@@ -36,6 +36,10 @@ Any errors go to standard out (`docker-compose logs -f app`)
     e.g. On Ubuntu `nano /etc/hosts` and add `127.0.0.1    address-book.local`
 2) `docker-compose up -d --build`
 3) `docker-compose exec app bin/dev-install.sh`
-4) Wait about 10 seconds
-5) http://address-book.local/
-6) http://address-book.local/populate-test-data
+4) http://address-book.local/
+5) http://address-book.local/populate-test-data
+
+## Test
+All QA tests are in an Ant build.xml file.
+To run them, run:
+`docker-compose exec app ant`
